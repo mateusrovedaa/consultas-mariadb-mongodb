@@ -1,0 +1,55 @@
+db.employees.aggregate([
+    {
+        "$lookup": {
+            "from": "salaries",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$$emp_no",
+                                "$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "s"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$s",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$group": {
+            "_id": {
+                "first_name": "$first_name",
+                "birth_date": "$birth_date",
+                "hire_date": "$hire_date"
+            },
+            "salary": {
+                "$sum": "$s.salary"
+            }
+        }
+    },
+    {
+        "$sort": {
+            "_id": -1
+        }
+    },
+    {
+        "$project": {
+            "first_name": "$_id.first_name",
+            "birth_date": "$_id.birth_date",
+            "hire_date": "$_id.hire_date",
+            "salary": 1,
+            "_id": 0
+        }
+    }
+])

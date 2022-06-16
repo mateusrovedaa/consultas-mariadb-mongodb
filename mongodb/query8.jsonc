@@ -1,0 +1,131 @@
+db.employees.aggregate([
+    {
+        "$lookup": {
+            "from": "salaries",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$$emp_no",
+                                "$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "s"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$s",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$lookup": {
+            "from": "titles",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$$emp_no",
+                                "$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "t"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$t",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$lookup": {
+            "from": "dept_emp",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$$emp_no",
+                                "$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "de"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$de",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$lookup": {
+            "from": "departments",
+            "let": {},
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$dept_no",
+                                "$dept_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "d"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$d",
+            "preserveNullAndEmptyArrays": true
+        }
+    },
+    {
+        "$group": {
+            "_id": {
+                "d_dept_name": "$d.dept_name",
+                "t_title": "$t.title"
+            },
+            "maior_salario": {
+                "$max": "$s.salary"
+            },
+            "menor_salario": {
+                "$min": "$s.salary"
+            }
+        }
+    },
+    {
+        "$project": {
+            "d.dept_name": "$_id.d_dept_name",
+            "t.title": "$_id.t_title",
+            "maior_salario": 1,
+            "menor_salario": 1,
+            "_id": 0
+        }
+    }
+])

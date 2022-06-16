@@ -1,0 +1,77 @@
+db.titles.aggregate([
+    {
+        "$lookup": {
+            "from": "employees",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$emp_no",
+                                "$$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "e"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$e",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$lookup": {
+            "from": "salaries",
+            "let": {
+                "e_emp_no": "$e.emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$$e_emp_no",
+                                "$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "s"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$s",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$group": {
+            "_id": "$title",
+            "count": {
+                "$sum": 1
+            },
+            "sum_s_salary": {
+                "$sum": "$s.salary"
+            }
+        }
+    },
+    {
+        "$project": {
+            "title": "$_id",
+            "count": 1,
+            "sum_s_salary": 1,
+            "_id": 0
+        }
+    }
+])
+  
+  

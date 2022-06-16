@@ -1,0 +1,135 @@
+db.employees.aggregate([
+    {
+        "$lookup": {
+            "from": "salaries",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$$emp_no",
+                                "$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "s"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$s",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$lookup": {
+            "from": "dept_emp",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$$emp_no",
+                                "$emp_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "de"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$de",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$lookup": {
+            "from": "titles",
+            "let": {
+                "emp_no": "$emp_no"
+            },
+            "pipeline": [
+                {
+                    "$match": {
+                        "$and": [
+                            {
+                                "$expr": {
+                                    "$eq": [
+                                        "$$emp_no",
+                                        "$emp_no"
+                                    ]
+                                }
+                            },
+                            {
+                                "$and": [
+                                    {
+                                        "to_date": {
+                                            "$gte": "1986-01-01"
+                                        }
+                                    },
+                                    {
+                                        "title": "Senior Engineer"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ],
+            "as": "t"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$t",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$lookup": {
+            "from": "departments",
+            "let": {},
+            "pipeline": [
+                {
+                    "$match": {
+                        "$expr": {
+                            "$eq": [
+                                "$dept_no",
+                                "$dept_no"
+                            ]
+                        }
+                    }
+                }
+            ],
+            "as": "d"
+        }
+    },
+    {
+        "$unwind": {
+            "path": "$d",
+            "preserveNullAndEmptyArrays": false
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "nome": "$first_name",
+            "sobrenome": "$last_name",
+            "t.title": 1,
+            "s.salary": 1,
+            "data_inicio": "$t.to_date",
+            "d.dept_name": 1
+        }
+    }
+])
